@@ -1,0 +1,71 @@
+.page.sudoku-page {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 28px;
+  padding-top: 24px;
+  padding-bottom: 32px;
+}
+
+.page.sudoku-page h1 {
+  margin: 0;
+  font-size: 40px;
+}
+
+.sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 40px);
+  grid-template-rows: repeat(9, 40px);
+  border: 2px solid var(--text-h);
+  width: fit-content;
+  margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+  .sudoku-grid {
+    grid-template-columns: repeat(9, 32px);
+    grid-template-rows: repeat(9, 32px);
+  }
+}
+
+.sudoku-cell {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  text-align: center;
+  font: inherit;
+  font-size: 18px;
+  color: var(--text-h);
+  background: var(--bg);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.sudoku-cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.sudoku-cell.border-left {
+  border-left: 2px solid var(--text-h);
+}
+
+.sudoku-cell.border-top {
+  border-top: 2px solid var(--text-h);
+}
+
+.sudoku-cell.border-right {
+  border-right: 2px solid var(--text-h);
+}
+
+.sudoku-cell.border-bottom {
+  border-bottom: 2px solid var(--text-h);
+}
+
+.sudoku-controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
