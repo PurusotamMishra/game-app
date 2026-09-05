@@ -64,6 +64,14 @@
   border-bottom: 2px solid var(--text-h);
 }
 
+.sudoku-message {
+  color: #e5484d;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
 .sudoku-controls {
   display: flex;
   justify-content: center;

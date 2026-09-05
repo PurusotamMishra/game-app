@@ -82,6 +82,7 @@
 }
 
 .tictactoe-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 90px);
   grid-template-rows: repeat(3, 90px);
@@ -90,6 +91,35 @@
   border: 4px solid var(--border);
   width: fit-content;
   margin: 0 auto;
+}
+
+.win-line {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.win-line line {
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-win-line 250ms ease-out forwards;
+}
+
+@keyframes draw-win-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .win-line line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -106,17 +136,22 @@
   background: var(--bg);
   cursor: pointer;
   font-size: 32px;
-  color: var(--text-h);
+  font-weight: 600;
+  color: var(--accent);
   transition: background 0.2s;
 }
 
-.tictactoe-cell:hover {
+.tictactoe-cell:enabled:hover {
   background: var(--accent-bg);
 }
 
 .tictactoe-cell:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+.tictactoe-cell:disabled {
+  cursor: default;
 }
 
 .tictactoe-controls {
