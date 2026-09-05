@@ -2,8 +2,10 @@ import { useState } from 'react'
 import type { Page } from '../App'
 import type { Board } from '../games/tictactoe/ai'
 import { nextStepEasy, nextStepMedium, nextStepHard } from '../games/tictactoe/ai'
-import type { WinningLine } from '../games/tictactoe/rules'
+import type { GameResult, WinningLine } from '../games/tictactoe/rules'
 import { getResult, getWinningLine } from '../games/tictactoe/rules'
+import type { Mode, Player } from '../games/tictactoe/labels'
+import { getScoreLabels, getStatusText } from '../games/tictactoe/labels'
 import './TicTacToePage.css'
 
 interface TicTacToePageProps {
@@ -13,6 +15,7 @@ interface TicTacToePageProps {
 type Difficulty = 'easy' | 'medium' | 'hard'
 
 const EMPTY_BOARD: Board = Array(9).fill(null)
+const EMPTY_SCORES = { x: 0, draws: 0, o: 0 }
 
 const NEXT_STEP: Record<Difficulty, typeof nextStepEasy> = {
   easy: nextStepEasy,
@@ -50,12 +53,14 @@ function strikeCoords(line: WinningLine) {
 }
 
 function TicTacToePage({ onNavigate }: TicTacToePageProps) {
+  const [mode, setMode] = useState<Mode>('bot')
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const [board, setBoard] = useState<Board>(EMPTY_BOARD)
-  const [result, setResult] = useState<ReturnType<typeof getResult>>(null)
-  const [scores, setScores] = useState({ x: 0, draws: 0, o: 0 })
+  const [result, setResult] = useState<GameResult>(null)
+  const [currentPlayer, setCurrentPlayer] = useState<Player>('X')
+  const [scores, setScores] = useState(EMPTY_SCORES)
 
-  function applyResult(outcome: NonNullable<ReturnType<typeof getResult>>) {
+  function applyResult(outcome: NonNullable<GameResult>) {
     setResult(outcome)
     setScores((prev) => {
       if (outcome === 'draw') return { ...prev, draws: prev.draws + 1 }
@@ -67,23 +72,30 @@ function TicTacToePage({ onNavigate }: TicTacToePageProps) {
   function handleCellClick(index: number) {
     if (result || board[index]) return
 
-    const afterUser = [...board]
-    afterUser[index] = 'X'
+    const afterMove = [...board]
+    afterMove[index] = currentPlayer
 
-    const userResult = getResult(afterUser)
-    if (userResult) {
-      setBoard(afterUser)
-      applyResult(userResult)
+    const moveResult = getResult(afterMove)
+    if (moveResult) {
+      setBoard(afterMove)
+      applyResult(moveResult)
       return
     }
 
-    const emptyIndices = afterUser.reduce<number[]>((acc, cell, cellIndex) => {
+    // Two humans share the board, so the turn simply passes to the other mark.
+    if (mode === 'two-player') {
+      setBoard(afterMove)
+      setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X')
+      return
+    }
+
+    const emptyIndices = afterMove.reduce<number[]>((acc, cell, cellIndex) => {
       if (cell === null) acc.push(cellIndex)
       return acc
     }, [])
 
-    const botIndex = NEXT_STEP[difficulty](afterUser, emptyIndices)
-    const afterBot = [...afterUser]
+    const botIndex = NEXT_STEP[difficulty](afterMove, emptyIndices)
+    const afterBot = [...afterMove]
     afterBot[botIndex] = 'O'
 
     setBoard(afterBot)
@@ -95,18 +107,23 @@ function TicTacToePage({ onNavigate }: TicTacToePageProps) {
   function handleReset() {
     setBoard(EMPTY_BOARD)
     setResult(null)
+    setCurrentPlayer('X')
+  }
+
+  // A half-played game can't carry across modes, and vs-bot wins shouldn't be
+  // tallied together with vs-human ones, so switching starts from scratch.
+  function handleModeChange(nextMode: Mode) {
+    if (nextMode === mode) return
+    setMode(nextMode)
+    setBoard(EMPTY_BOARD)
+    setResult(null)
+    setCurrentPlayer('X')
+    setScores(EMPTY_SCORES)
   }
 
   const winningLine = getWinningLine(board)
-
-  const statusText =
-    result === 'X'
-      ? 'You win!'
-      : result === 'O'
-        ? 'Bot wins!'
-        : result === 'draw'
-          ? "It's a draw!"
-          : 'Your turn (X)'
+  const statusText = getStatusText(mode, result, currentPlayer)
+  const scoreLabels = getScoreLabels(mode)
 
   return (
     <section className="page tictactoe-page">
@@ -117,21 +134,42 @@ function TicTacToePage({ onNavigate }: TicTacToePageProps) {
       <h1>Tic-Tac-Toe</h1>
 
       <div className="controls-row">
-        <label className="difficulty-select">
-          Difficulty
-          <select
-            value={difficulty}
-            onChange={(event) => setDifficulty(event.target.value as Difficulty)}
+        <div className="mode-toggle" role="group" aria-label="Game mode">
+          <button
+            type="button"
+            className={mode === 'bot' ? 'mode-option active' : 'mode-option'}
+            aria-pressed={mode === 'bot'}
+            onClick={() => handleModeChange('bot')}
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </label>
+            1 Player
+          </button>
+          <button
+            type="button"
+            className={mode === 'two-player' ? 'mode-option active' : 'mode-option'}
+            aria-pressed={mode === 'two-player'}
+            onClick={() => handleModeChange('two-player')}
+          >
+            2 Players
+          </button>
+        </div>
+
+        {mode === 'bot' && (
+          <label className="difficulty-select">
+            Difficulty
+            <select
+              value={difficulty}
+              onChange={(event) => setDifficulty(event.target.value as Difficulty)}
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+        )}
 
         <div className="scoreboard">
           <div className="score-box">
-            <span className="score-label">You (X)</span>
+            <span className="score-label">{scoreLabels.x}</span>
             <span className="score-value">{scores.x}</span>
           </div>
           <div className="score-box">
@@ -139,7 +177,7 @@ function TicTacToePage({ onNavigate }: TicTacToePageProps) {
             <span className="score-value">{scores.draws}</span>
           </div>
           <div className="score-box">
-            <span className="score-label">Bot (O)</span>
+            <span className="score-label">{scoreLabels.o}</span>
             <span className="score-value">{scores.o}</span>
           </div>
         </div>
